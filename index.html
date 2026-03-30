@@ -394,7 +394,18 @@ function toCalendarLink(batchName){
 
 function buildRows(payments,batch){
   var flink = document.getElementById('flinkInput') ? document.getElementById('flinkInput').value.trim() : '';
-  return payments.map(function(p){
+  // Deduplicate: keep first occurrence per email+phone combination
+  var seen = new Set();
+  var unique = payments.filter(function(p){
+    var ph = cleanPhone(p.phone);
+    var email = (p.email||'').trim().toLowerCase();
+    var phone = ph.phone.trim();
+    var key = email + '||' + phone;
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return unique.map(function(p){
     var ph=cleanPhone(p.phone);
     return{
       Name:'', CountryCode:ph.cc, Phone:ph.phone,
@@ -551,12 +562,22 @@ function renderResults(matched,unmatched){
     i++;
     const um=key==='__UNMATCHED__';
     const tr=document.createElement('tr');
+    // Count unique for display
+    var seen=new Set();
+    var uCount=g.payments.filter(function(p){
+      var ph=cleanPhone(p.phone);
+      var k=(p.email||'').trim().toLowerCase()+'||'+ph.phone.trim();
+      if(seen.has(k))return false;seen.add(k);return true;
+    }).length;
+    var dupCount=g.payments.length-uCount;
+    var countHtml=uCount.toLocaleString();
+    if(dupCount>0) countHtml+=` <span style="font-size:9px;color:var(--r);font-family:var(--mono);">-${dupCount} dup</span>`;
     tr.innerHTML=`
       <td class="sm mu">${String(i).padStart(2,'0')}</td>
       <td style="font-family:var(--mono);font-size:12px;">${xss(g.batch.name)}</td>
       <td class="sm">${fmtDt(g.batch.fromDt)}</td>
       <td class="sm">${fmtDt(g.batch.toDt)}</td>
-      <td><span class="badge ${um?'br':'bg'}">${g.payments.length.toLocaleString()}</span></td>
+      <td><span class="badge ${um?'br':'bg'}">${countHtml}</span></td>
       <td><button class="btn-dl" data-k="${xss(key)}">⬇ CSV</button></td>`;
     tbody.appendChild(tr);
   }
