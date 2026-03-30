@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Be10X · Batch Splitter</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root {
+  --bg:#07090d; --s1:#0d1117; --s2:#111822; --s3:#162032;
+  --border:#1c2a3d; --border2:#243547;
+  --y:#f0b429; --y2:#fcd34d; --yg:rgba(240,180,41,.1); --yb:rgba(240,180,41,.05);
+  --g:#22c55e; --gb:rgba(34,197,94,.12);
+  --r:#f43f5e; --rb:rgba(244,63,94,.12);
+  --b:#38bdf8; --bb:rgba(56,189,248,.1);
+  --t:#e2e8f0; --tm:#64748b; --td:#94a3b8;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--t);font-family:var(--sans);min-height:100vh;
+  background-image:radial-gradient(ellipse 70% 40% at 50% 0%,rgba(240,180,41,.04),transparent 60%);}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;gap:14px;padding:0 32px;height:56px;
+  border-bottom:1px solid var(--border);background:rgba(7,9,13,.95);
+  backdrop-filter:blur(8px);position:sticky;top:0;z-index:200;}
+.hdr-mark{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--y);}
+.hdr-sep{color:var(--border2);}
+.hdr-title{font-family:var(--mono);font-size:11px;color:var(--td);letter-spacing:.06em;}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--tm);}
+.dot.ready{background:var(--g);box-shadow:0 0 6px var(--g);}
+.hdr-note{font-family:var(--mono);font-size:10px;color:var(--tm);letter-spacing:.06em;}
+
+/* LAYOUT */
+.wrap{max-width:960px;margin:0 auto;padding:48px 24px 80px;}
+
+/* STEP */
+.step{display:flex;align-items:center;gap:14px;margin-bottom:16px;margin-top:40px;}
+.step:first-child{margin-top:0;}
+.step-n{font-family:var(--mono);font-size:10px;font-weight:700;
+  color:var(--bg);background:var(--y);padding:3px 7px;letter-spacing:.06em;}
+.step-l{font-family:var(--mono);font-size:11px;font-weight:600;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--y);}
+.step-line{flex:1;height:1px;background:var(--border);}
+
+/* DROPS */
+.drop-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:560px){.drop-row{grid-template-columns:1fr;}}
+.drop{border:1.5px dashed var(--border2);background:var(--s1);padding:36px 20px 28px;
+  text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+  position:relative;overflow:hidden;}
+.drop input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop:hover,.drop.over{border-color:var(--y);background:var(--yb);}
+.drop.ok{border-color:var(--g);border-style:solid;background:var(--gb);}
+.drop-ico{font-size:32px;margin-bottom:12px;display:block;line-height:1;}
+.drop-head{font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;color:var(--td);margin-bottom:6px;}
+.drop-sub{font-size:12px;color:var(--tm);line-height:1.5;}
+.drop-ok{font-family:var(--mono);font-size:11px;color:var(--g);margin-top:12px;display:none;}
+.drop.ok .drop-ok{display:block;} .drop.ok .drop-sub{opacity:.4;}
+.drop.ok .drop-head{color:var(--g);}
+
+/* DETECT BOX */
+.dbox{background:var(--s1);border:1px solid var(--border);padding:20px 24px;
+  display:none;margin-top:12px;}
+.dbox.on{display:block;}
+.dbox-title{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--b);margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;}
+.dbox-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.dbox-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;}
+.ditem{background:var(--s2);border:1px solid var(--border);padding:10px 14px;}
+.ditem-k{font-family:var(--mono);font-size:9px;color:var(--tm);
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px;}
+.ditem-v{font-family:var(--mono);font-size:12px;color:var(--t);margin-bottom:3px;}
+.ditem-a{font-family:var(--mono);font-size:10px;color:var(--y);}
+
+/* BUTTONS */
+.btn-run{font-family:var(--mono);font-size:12px;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;background:var(--y);color:var(--bg);
+  border:none;padding:14px 32px;cursor:pointer;transition:background .12s,transform .12s;
+  display:flex;align-items:center;gap:10px;}
+.btn-run:hover:not(:disabled){background:var(--y2);transform:translateY(-1px);}
+.btn-run:disabled{background:var(--border2);color:var(--tm);cursor:not-allowed;transform:none;}
+.run-row{display:flex;align-items:center;gap:20px;flex-wrap:wrap;}
+.run-hint{font-family:var(--mono);font-size:11px;color:var(--tm);}
+
+/* RESULTS */
+.results{display:none;} .results.on{display:block;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);margin-bottom:20px;}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr;}}
+.stat{background:var(--s1);padding:20px 16px;text-align:center;}
+.stat-n{font-family:var(--mono);font-size:32px;font-weight:700;
+  color:var(--y);line-height:1;margin-bottom:6px;}
+.stat-n.g{color:var(--g);} .stat-n.r{color:var(--r);}
+.stat-l{font-size:11px;color:var(--tm);letter-spacing:.06em;text-transform:uppercase;}
+.dl-row{display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+.dl-lbl{font-family:var(--mono);font-size:10px;color:var(--tm);
+  letter-spacing:.1em;text-transform:uppercase;}
+.btn-zip{font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;background:var(--g);color:var(--bg);
+  border:none;padding:10px 22px;cursor:pointer;transition:background .12s;
+  display:flex;align-items:center;gap:8px;}
+.btn-zip:hover{background:#4ade80;}
+
+/* TABLE */
+.twrap{overflow-x:auto;border:1px solid var(--border);}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead th{background:var(--s2);border-bottom:1px solid var(--border);
+  padding:10px 14px;text-align:left;font-family:var(--mono);
+  font-size:9px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--tm);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover td{background:var(--s2);}
+tbody td{padding:10px 14px;vertical-align:middle;}
+.badge{display:inline-block;padding:3px 8px;
+  font-family:var(--mono);font-size:10px;font-weight:700;}
+.bg{background:var(--gb);color:var(--g);border:1px solid rgba(34,197,94,.3);}
+.br{background:var(--rb);color:var(--r);border:1px solid rgba(244,63,94,.3);}
+.btn-dl{font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;background:var(--s3);
+  color:var(--td);border:1px solid var(--border2);padding:7px 14px;
+  cursor:pointer;transition:all .12s;white-space:nowrap;}
+.btn-dl:hover{border-color:var(--y);color:var(--y);background:var(--yg);}
+.sm{font-family:var(--mono);font-size:10px;color:var(--td);}
+.mu{color:var(--tm);}
+
+/* ALERTS */
+.alert{padding:12px 16px;border:1px solid;font-family:var(--mono);
+  font-size:11px;line-height:1.7;margin-bottom:10px;}
+.ay{border-color:rgba(240,180,41,.35);background:var(--yb);color:#fcd34d;}
+.ar{border-color:rgba(244,63,94,.4);background:var(--rb);color:#fda4af;}
+#msgs{margin-bottom:12px;}
+
+/* OVERLAY */
+.ov{display:none;position:fixed;inset:0;background:rgba(7,9,13,.93);z-index:999;
+  align-items:center;justify-content:center;flex-direction:column;gap:18px;}
+.ov.on{display:flex;}
+.spin{width:44px;height:44px;border:3px solid var(--border);border-top-color:var(--y);
+  border-radius:50%;animation:sp .7s linear infinite;}
+@keyframes sp{to{transform:rotate(360deg);}}
+.sp1{font-family:var(--mono);font-size:12px;color:var(--y);letter-spacing:.1em;}
+.sp2{font-family:var(--mono);font-size:10px;color:var(--tm);}
+
+.foot{border-top:1px solid var(--border);padding:18px 32px;text-align:center;
+  font-family:var(--mono);font-size:10px;color:var(--tm);letter-spacing:.06em;}
+</style>
+</head>
+<body>
+
+<div class="ov" id="ov">
+  <div class="spin"></div>
+  <div class="sp1" id="sp1">PROCESSING</div>
+  <div class="sp2" id="sp2">Matching payments to batch groups…</div>
+</div>
+
+<header class="hdr">
+  <span class="hdr-mark">Be10X</span>
+  <span class="hdr-sep">·</span>
+  <span class="hdr-title">BATCH SPLITTER</span>
+  <div class="hdr-right">
+    <span class="dot" id="dot"></span>
+    <span class="hdr-note" id="dotNote">AWAITING FILES</span>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- 01 UPLOAD -->
+  <div class="step">
+    <span class="step-n">01</span>
+    <span class="step-l">Upload Both Files</span>
+    <span class="step-line"></span>
+  </div>
+
+  <div class="drop-row">
+    <div class="drop" id="dA">
+      <input type="file" accept=".csv" id="fA">
+      <span class="drop-ico">📋</span>
+      <div class="drop-head">Batch Change CSV</div>
+      <div class="drop-sub">Batch_Change.csv<br>Time ranges per group</div>
+      <div class="drop-ok" id="okA">— LOADED —</div>
+    </div>
+    <div class="drop" id="dB">
+      <input type="file" accept=".csv" id="fB">
+      <span class="drop-ico">💳</span>
+      <div class="drop-head">Payment Report CSV</div>
+      <div class="drop-sub">Juspay / GKL export<br>Contains payment records</div>
+      <div class="drop-ok" id="okB">— LOADED —</div>
+    </div>
+  </div>
+
+  <!-- AUTO-DETECT PANEL -->
+  <div class="dbox" id="dbox">
+    <div class="dbox-title">Auto-detected mapping — everything below is automatic</div>
+    <div class="dbox-grid" id="dgrid"></div>
+  </div>
+
+  <!-- 02 PROCESS -->
+  <div class="step">
+    <span class="step-n">02</span>
+    <span class="step-l">Split</span>
+    <span class="step-line"></span>
+  </div>
+
+  <div id="msgs"></div>
+  <div class="run-row">
+    <button class="btn-run" id="btnRun" disabled>⚡ Split by Batch Group</button>
+    <span class="run-hint" id="hint">Upload both files to continue</span>
+  </div>
+
+  <!-- 03 RESULTS -->
+  <div class="results" id="res">
+    <div class="step" style="margin-top:40px;">
+      <span class="step-n">03</span>
+      <span class="step-l">Download Results</span>
+      <span class="step-line"></span>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="dl-row">
+      <span class="dl-lbl" id="grpLbl">—</span>
+      <button class="btn-zip" id="btnZip">⬇ Download ALL as ZIP</button>
+    </div>
+
+    <div class="twrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Batch / Group Name</th>
+            <th>From (inclusive)</th>
+            <th>To (exclusive)</th>
+            <th>Payments</th>
+            <th>CSV</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+
+<footer class="foot">
+  Be10X · House of EdTech · Runs entirely in your browser — no data leaves your device
+</footer>
+
+<script>
+// ──────────────────────────────────────────
+// STATE
+// ──────────────────────────────────────────
+let batchRows=null, payRows=null, cols={}, groups={};
+
+// ──────────────────────────────────────────
+// DATE PARSER  – handles all messy formats
+// ──────────────────────────────────────────
+function parseDt(s){
+  if(!s) return null;
+  s=String(s).trim();
+  if(!s||/^(NaN|nan|null|undefined)$/.test(s)) return null;
+
+  // ISO: "2026-03-29 00:02:14"
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]);
+
+  // Normalize messy batch formats
+  s=s
+    .replace(/;/g,':')                              // semicolons → colons
+    .replace(/\./g,':')                             // dots in time → colons
+    .replace(/\s+/g,' ').trim()
+    .replace(/(\d{4})[\/:]?\s*(\d{1,2}:)/g,'$1 $2') // "2024/ 17:" → "2024 17:"
+    .replace(/(\d{4}):\s+/g,'$1 ')                 // "2026: 17" → "2026 17"
+    .replace(/\/\s+/g,'/');                         // "07/ 2024" → "07/2024"
+
+  // Missing slash: "29/122023" → "29/12/2023"
+  s=s.replace(/^(\d{1,2})\/(\d{2})(\d{4})\s/,'$1/$2/$3 ');
+
+  // DD/MM/YYYY HH:MM:SS
+  m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4,5})\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+  if(m){
+    let[,d,mo,yr,h,mi,sc]=m; let year=+yr;
+    if(year>3000){
+      const ys=String(year); let fix=null;
+      for(let i=0;i<ys.length&&!fix;i++){
+        const c=+(ys.slice(0,i)+ys.slice(i+1));
+        if(c>=2020&&c<=2035)fix=c;
+      }
+      year=fix||(+ys.slice(-4));
+    }
+    try{const dt=new Date(year,+mo-1,+d,+h,+mi,+(sc||0));if(!isNaN(dt))return dt;}catch(e){}
+  }
+  const n=new Date(s); return isNaN(n)?null:n;
+}
+
+function fmtDt(d){
+  if(!d) return '<span class="mu">open</span>';
+  return d.toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',
+    hour:'2-digit',minute:'2-digit',hour12:true});
+}
+
+// ──────────────────────────────────────────
+// COLUMN AUTO-DETECTION
+// ──────────────────────────────────────────
+function detectCols(bf,pf){
+  const f=(fields,pats)=>fields.find(x=>pats.some(p=>p.test(x)))||null;
+  return {
+    bName : f(bf,[/batch.?name/i,/batch/i]),
+    bFrom : f(bf,[/from.*inclusive/i,/\bfrom\b/i]),
+    bTo   : f(bf,[/to.*exclusive/i,/\bto\b/i]),
+    bWa   : f(bf,[/wa.?group/i,/whatsapp/i]),
+    pDate : f(pf,[/createdat/i,/created.?at/i,/\bdate\b/i,/\btime\b/i]),
+    pEmail: f(pf,[/email/i,/mail/i]),
+    pPhone: f(pf,[/phone/i,/mobile/i,/number/i]),
+    pAmt  : f(pf,[/amount/i,/price/i,/\bamt\b/i]),
+  };
+}
+
+// ──────────────────────────────────────────
+// BATCH PARSE
+// ──────────────────────────────────────────
+function parseBatches(rows,c){
+  const out=[];
+  for(const r of rows){
+    const name    =String(r[c.bName]||'').trim();
+    const fromStr =String(r[c.bFrom]||'').trim();
+    const toStr   =String(r[c.bTo]  ||'').trim();
+    const wa      =String(r[c.bWa]  ||'').trim();
+    if(!fromStr||fromStr==='NaN') continue;
+    const fromDt=parseDt(fromStr); if(!fromDt) continue;
+    const toDt=parseDt(toStr);
+    out.push({name,fromDt,toDt,wa});
+  }
+  out.sort((a,b)=>a.fromDt-b.fromDt);
+  return out;
+}
+
+// ──────────────────────────────────────────
+// FIND BATCH  (bracketed match first; open-ended as last resort)
+// ──────────────────────────────────────────
+function findBatch(dt,batches){
+  if(!dt) return null;
+  for(const b of batches)
+    if(dt>=b.fromDt&&b.toDt&&dt<b.toDt) return b;      // exact bracket
+  for(let i=batches.length-1;i>=0;i--)
+    if(!batches[i].toDt&&dt>=batches[i].fromDt) return batches[i]; // latest open-ended
+  return null;
+}
+
+// ──────────────────────────────────────────
+// PHONE CLEANER
+// ──────────────────────────────────────────
+function cleanPhone(raw){
+  let s=String(raw||'').replace(/['\s\-\(\)+"]/g,'');
+  if(s.startsWith('+'))s=s.slice(1);
+  if(s.startsWith('91')&&s.length===12) return{cc:'91',phone:s.slice(2)};
+  if(s.startsWith('0') &&s.length===11) return{cc:'91',phone:s.slice(1)};
+  if(s.length===10) return{cc:'91',phone:s};
+  if(s.length>10) return{cc:s.slice(0,s.length-10),phone:s.slice(-10)};
+  return{cc:'91',phone:s};
+}
+
+// ──────────────────────────────────────────
+// BUILD OUTPUT ROWS  (matches Main Data format)
+// ──────────────────────────────────────────
+const COLS=['Name','CountryCode','Phone','AllowBroadcast','AllowSMS',
+            'emailid','Amount','wsdt','brname','calendar','flink'];
+
+function buildRows(payments,batch){
+  return payments.map(p=>{
+    const{cc,phone}=cleanPhone(p.phone);
+    return{
+      Name:'', CountryCode:cc, Phone:phone,
+      AllowBroadcast:'True', AllowSMS:'True',
+      emailid:p.email||'', Amount:p.amount||'',
+      wsdt:batch.name,    // ← Batch_name (auto)
+      brname:'Be10X',
+      calendar:batch.wa,  // ← WA GROUP (auto)
+      flink:''
+    };
+  });
+}
+
+function toCSV(rows){
+  const e=v=>{v=String(v??'');return(v.includes(',')||v.includes('"')||v.includes('\n'))?'"'+v.replace(/"/g,'""')+'"':v;};
+  return[COLS.join(','),...rows.map(r=>COLS.map(c=>e(r[c])).join(','))].join('\n');
+}
+
+function slug(s){return String(s).replace(/[^a-zA-Z0-9]+/g,'_').replace(/^_|_$/g,'').slice(0,55);}
+
+function dl(csv,name){
+  const a=Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'})),download:name});
+  a.click();URL.revokeObjectURL(a.href);
+}
+
+function xss(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+// ──────────────────────────────────────────
+// FILE LOADING
+// ──────────────────────────────────────────
+function wireFile(zid,fid,oid,cb){
+  const z=document.getElementById(zid),f=document.getElementById(fid),o=document.getElementById(oid);
+  const load=file=>{
+    Papa.parse(file,{header:true,skipEmptyLines:true,
+      complete:r=>{cb(r.data,r.meta.fields);z.classList.add('ok');
+        o.textContent=`✓ ${r.data.length.toLocaleString()} rows loaded`;},
+      error:e=>alert('CSV error: '+e.message)});};
+  f.addEventListener('change',()=>{if(f.files[0])load(f.files[0]);});
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over');});
+  z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{
+    e.preventDefault();z.classList.remove('over');
+    const file=e.dataTransfer.files[0];if(!file)return;
+    const dt=new DataTransfer();dt.items.add(file);f.files=dt.files;
+    f.dispatchEvent(new Event('change'));});
+}
+
+wireFile('dA','fA','okA',(rows,fields)=>{batchRows=rows;tryDetect();});
+wireFile('dB','fB','okB',(rows,fields)=>{payRows=rows;tryDetect();});
+
+// ──────────────────────────────────────────
+// AUTO-DETECT + UI
+// ──────────────────────────────────────────
+function tryDetect(){
+  if(!batchRows||!payRows) return;
+  const bf=Object.keys(batchRows[0]||{}), pf=Object.keys(payRows[0]||{});
+  cols=detectCols(bf,pf);
+
+  const grid=document.getElementById('dgrid'); grid.innerHTML='';
+  const items=[
+    ['Batch name','bName','→ wsdt in output'],
+    ['From time', 'bFrom','→ match start'],
+    ['To time',   'bTo',  '→ match end'],
+    ['WA Group',  'bWa',  '→ calendar in output'],
+    ['Payment date','pDate','→ matching key'],
+    ['Email',     'pEmail','→ emailid'],
+    ['Phone',     'pPhone','→ Phone + CountryCode'],
+    ['Amount',    'pAmt',  '→ Amount'],
+  ];
+  for(const[k,key,arrow] of items){
+    const val=cols[key];
+    const d=document.createElement('div'); d.className='ditem';
+    d.innerHTML=`<div class="ditem-k">${k}</div>
+      <div class="ditem-v">${val||'<span style="color:var(--r)">not found</span>'}</div>
+      <div class="ditem-a">${arrow}</div>`;
+    grid.appendChild(d);
+  }
+  document.getElementById('dbox').classList.add('on');
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('hint').textContent=
+    `${payRows.length.toLocaleString()} payments  ×  ${batchRows.length.toLocaleString()} batch rows`;
+  const dot=document.getElementById('dot');
+  dot.classList.add('ready');
+  document.getElementById('dotNote').textContent='READY';
+}
+
+// ──────────────────────────────────────────
+// PROCESS
+// ──────────────────────────────────────────
+document.getElementById('btnRun').addEventListener('click',()=>{
+  document.getElementById('msgs').innerHTML=''; groups={};
+  const ov=document.getElementById('ov'); ov.classList.add('on');
+  document.getElementById('sp2').textContent=`Parsing ${batchRows.length} batch rows…`;
+  setTimeout(run,40);
+});
+
+function run(){
+  const ov=document.getElementById('ov');
+  try{
+    const batches=parseBatches(batchRows,cols);
+    if(!batches.length){
+      ov.classList.remove('on');
+      addMsg('r','No valid batch rows found. Check columns in Batch_Change.csv.');
+      return;
+    }
+    document.getElementById('sp2').textContent=`Matching ${payRows.length} payments…`;
+    let matched=0,unmatched=0,parseErr=0;
+
+    for(const row of payRows){
+      const dt=parseDt(row[cols.pDate]||'');
+      if(!dt) parseErr++;
+      const batch=dt?findBatch(dt,batches):null;
+      const key=batch?batch.name:'__UNMATCHED__';
+      if(!groups[key]) groups[key]={
+        batch:batch||{name:'Unmatched',fromDt:null,toDt:null,wa:''},
+        payments:[]
+      };
+      groups[key].payments.push({
+        email:row[cols.pEmail]||'',
+        phone:row[cols.pPhone]||'',
+        amount:row[cols.pAmt]||'',
+      });
+      if(batch)matched++;else unmatched++;
+    }
+
+    if(parseErr) addMsg('ay',`⚠ ${parseErr} payments had unreadable dates → placed in Unmatched group.`);
+    if(unmatched>parseErr) addMsg('ay',`⚠ ${unmatched-parseErr} payments fell outside all batch ranges → Unmatched group.`);
+
+    renderResults(matched,unmatched);
+    ov.classList.remove('on');
+  }catch(e){
+    ov.classList.remove('on');
+    addMsg('ar','Error: '+e.message);
+    console.error(e);
+  }
+}
+
+// ──────────────────────────────────────────
+// RENDER
+// ──────────────────────────────────────────
+function renderResults(matched,unmatched){
+  const total=matched+unmatched, nG=Object.keys(groups).length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-n">${total.toLocaleString()}</div><div class="stat-l">Total</div></div>
+    <div class="stat"><div class="stat-n g">${matched.toLocaleString()}</div><div class="stat-l">Matched</div></div>
+    <div class="stat"><div class="stat-n r">${unmatched.toLocaleString()}</div><div class="stat-l">Unmatched</div></div>
+    <div class="stat"><div class="stat-n">${nG}</div><div class="stat-l">Groups</div></div>`;
+  document.getElementById('grpLbl').textContent=`${nG} group${nG!==1?'s':''} generated`;
+
+  const tbody=document.getElementById('tbody'); tbody.innerHTML='';
+  let i=0;
+  for(const[key,g] of Object.entries(groups)){
+    i++;
+    const um=key==='__UNMATCHED__';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td class="sm mu">${String(i).padStart(2,'0')}</td>
+      <td style="font-family:var(--mono);font-size:12px;">${xss(g.batch.name)}</td>
+      <td class="sm">${fmtDt(g.batch.fromDt)}</td>
+      <td class="sm">${fmtDt(g.batch.toDt)}</td>
+      <td><span class="badge ${um?'br':'bg'}">${g.payments.length.toLocaleString()}</span></td>
+      <td><button class="btn-dl" data-k="${xss(key)}">⬇ CSV</button></td>`;
+    tbody.appendChild(tr);
+  }
+  tbody.querySelectorAll('.btn-dl').forEach(b=>b.addEventListener('click',()=>dlGroup(b.dataset.k)));
+  document.getElementById('res').classList.add('on');
+  document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function dlGroup(key){
+  const g=groups[key]; if(!g) return;
+  dl(toCSV(buildRows(g.payments,g.batch)),`${slug(g.batch.name)}_Main_Data.csv`);
+}
+
+document.getElementById('btnZip').addEventListener('click',async()=>{
+  const zip=new JSZip();
+  for(const[key,g] of Object.entries(groups))
+    zip.file(`${slug(g.batch.name)}_Main_Data.csv`,toCSV(buildRows(g.payments,g.batch)));
+  const blob=await zip.generateAsync({type:'blob'});
+  const a=Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(blob),
+    download:`BatchGroups_${new Date().toISOString().slice(0,10)}.zip`});
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+function addMsg(cls,txt){
+  const d=document.createElement('div'); d.className='alert '+cls; d.textContent=txt;
+  document.getElementById('msgs').appendChild(d);
+}
+</script>
+</body>
+</html>
