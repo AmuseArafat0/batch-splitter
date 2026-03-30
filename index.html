@@ -383,17 +383,27 @@ function cleanPhone(raw){
 const COLS=['Name','CountryCode','Phone','AllowBroadcast','AllowSMS',
             'emailid','Amount','wsdt','brname','calendar','flink'];
 
+function toCalendarLink(batchName){
+  if(!batchName||batchName==='Unmatched') return '';
+  // Strip group suffix: " G2", " G02", " G10" etc
+  var name = batchName.replace(/\s*G\d+\s*$/i,'').trim();
+  // Spaces to hyphens
+  name = name.replace(/\s+/g,'-');
+  return 'https://link.be10x.in/Calendar-'+name;
+}
+
 function buildRows(payments,batch){
-  return payments.map(p=>{
-    const{cc,phone}=cleanPhone(p.phone);
+  var flink = document.getElementById('flinkInput') ? document.getElementById('flinkInput').value.trim() : '';
+  return payments.map(function(p){
+    var ph=cleanPhone(p.phone);
     return{
-      Name:'', CountryCode:cc, Phone:phone,
+      Name:'', CountryCode:ph.cc, Phone:ph.phone,
       AllowBroadcast:'True', AllowSMS:'True',
       emailid:p.email||'', Amount:p.amount||'',
-      wsdt:batch.name,    // ← Batch_name (auto)
+      wsdt:batch.name,
       brname:'Be10X',
-      calendar:batch.wa,  // ← WA GROUP (auto)
-      flink:''
+      calendar:toCalendarLink(batch.name),
+      flink:flink
     };
   });
 }
