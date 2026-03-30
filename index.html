@@ -203,11 +203,20 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="dbox-grid" id="dgrid"></div>
   </div>
 
-  <!-- 02 PROCESS -->
+  <!-- 02 FLINK + PROCESS -->
   <div class="step">
     <span class="step-n">02</span>
-    <span class="step-l">Split</span>
+    <span class="step-l">Set Follow-up Link &amp; Split</span>
     <span class="step-line"></span>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:0;margin-bottom:20px;">
+    <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);white-space:nowrap;padding:0 14px 0 0;padding-top:1px;">flink</label>
+    <input id="flinkInput" type="text" placeholder="https://forms.gle/..."
+      style="flex:1;background:var(--s1);border:1px solid var(--border2);color:var(--t);
+        padding:12px 14px;font-family:var(--mono);font-size:12px;outline:none;
+        transition:border-color .15s;"
+      onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
   </div>
 
   <div id="msgs"></div>
@@ -440,7 +449,7 @@ function tryDetect(){
     ['Batch name','bName','→ wsdt in output'],
     ['From time', 'bFrom','→ match start'],
     ['To time',   'bTo',  '→ match end'],
-    ['WA Group',  'bWa',  '→ calendar in output'],
+    ['WA Group',  'bWa',  '→ calendar (auto-transformed)'],
     ['Payment date','pDate','→ matching key'],
     ['Email',     'pEmail','→ emailid'],
     ['Phone',     'pPhone','→ Phone + CountryCode'],
