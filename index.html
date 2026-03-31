@@ -210,12 +210,24 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <span class="step-line"></span>
   </div>
 
-  <div style="display:flex;align-items:center;gap:0;margin-bottom:20px;">
-    <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);white-space:nowrap;padding:0 14px 0 0;padding-top:1px;">flink</label>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">wsdt <span style="color:var(--tm);font-weight:400;">(workshop date/time)</span></label>
+      <input id="wsdtInput" type="text" placeholder="e.g. 5th April | 11 AM"
+        style="background:var(--s1);border:1px solid var(--border2);color:var(--t);padding:11px 14px;font-family:var(--mono);font-size:12px;outline:none;"
+        onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;">
+      <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">calendar link</label>
+      <input id="calendarInput" type="text" placeholder="https://link.be10x.in/Calendar-..."
+        style="background:var(--s1);border:1px solid var(--border2);color:var(--t);padding:11px 14px;font-family:var(--mono);font-size:12px;outline:none;"
+        onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
+    <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">flink <span style="color:var(--tm);font-weight:400;">(follow-up form link)</span></label>
     <input id="flinkInput" type="text" placeholder="https://forms.gle/..."
-      style="flex:1;background:var(--s1);border:1px solid var(--border2);color:var(--t);
-        padding:12px 14px;font-family:var(--mono);font-size:12px;outline:none;
-        transition:border-color .15s;"
+      style="background:var(--s1);border:1px solid var(--border2);color:var(--t);padding:11px 14px;font-family:var(--mono);font-size:12px;outline:none;"
       onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
   </div>
 
@@ -409,13 +421,16 @@ function cleanPhone(raw){
   s=s.replace(/\D/g,'');
   if(!s) return{cc:'91',phone:''};
 
-  // Bare number without + prefix: if 10 digits assume India, if 11 with leading 0 strip it
+  // NO + prefix = NEVER do CC lookup. Always treat as local number.
+  // Rule: 9147630357 → the 91 is part of the number, NOT a country code.
   if(!hadPlus){
-    if(s.startsWith('0')&&s.length===11) return{cc:'91',phone:s.slice(1)};
-    if(s.length===10) return{cc:'91',phone:s};
+    if(s.startsWith('0')&&s.length===11) return{cc:'91',phone:s.slice(1)}; // 0xxxxxxxxxx → India
+    if(s.length===10) return{cc:'91',phone:s};                              // xxxxxxxxxx  → India
+    if(s.startsWith('91')&&s.length===12) return{cc:'91',phone:s.slice(2)};// 91xxxxxxxxxx → India (CC already included)
+    return{cc:'91',phone:s};                                                // anything else bare → India
   }
 
-  // Has + prefix: try CC table (3-digit first, then 2-digit, then 1-digit)
+  // Has + prefix ONLY: try CC table (3-digit first, then 2-digit, then 1-digit)
   var sorted=CC_TABLE.slice().sort(function(a,b){return b[0].length-a[0].length;});
   for(var i=0;i<sorted.length;i++){
     var cc=sorted[i][0];
@@ -436,17 +451,10 @@ function cleanPhone(raw){
 const COLS=['Name','CountryCode','Phone','AllowBroadcast','AllowSMS',
             'emailid','Amount','wsdt','brname','calendar','flink'];
 
-function toCalendarLink(batchName){
-  if(!batchName||batchName==='Unmatched') return '';
-  // Strip group suffix: " G2", " G02", " G10" etc
-  var name = batchName.replace(/\s*G\d+\s*$/i,'').trim();
-  // Spaces to hyphens
-  name = name.replace(/\s+/g,'-');
-  return 'https://link.be10x.in/Calendar-'+name;
-}
-
 function buildRows(payments,batch){
-  var flink = document.getElementById('flinkInput') ? document.getElementById('flinkInput').value.trim() : '';
+  var wsdt     = (document.getElementById('wsdtInput')     ? document.getElementById('wsdtInput').value.trim()     : '') || batch.name;
+  var calendar = (document.getElementById('calendarInput') ? document.getElementById('calendarInput').value.trim() : '');
+  var flink    = (document.getElementById('flinkInput')    ? document.getElementById('flinkInput').value.trim()    : '');
   // Deduplicate: keep first occurrence per email+phone combination
   var seen = new Set();
   var unique = payments.filter(function(p){
@@ -464,9 +472,9 @@ function buildRows(payments,batch){
       Name:'', CountryCode:ph.cc, Phone:ph.phone,
       AllowBroadcast:'True', AllowSMS:'True',
       emailid:p.email||'', Amount:p.amount||'',
-      wsdt:batch.name,
+      wsdt:wsdt,
       brname:'Be10X',
-      calendar:toCalendarLink(batch.name),
+      calendar:calendar,
       flink:flink
     };
   });
@@ -520,10 +528,10 @@ function tryDetect(){
 
   const grid=document.getElementById('dgrid'); grid.innerHTML='';
   const items=[
-    ['Batch name','bName','→ wsdt in output'],
+    ['Batch name','bName','→ used as fallback wsdt'],
     ['From time', 'bFrom','→ match start'],
     ['To time',   'bTo',  '→ match end'],
-    ['WA Group',  'bWa',  '→ calendar (auto-transformed)'],
+    
     ['Payment date','pDate','→ matching key'],
     ['Email',     'pEmail','→ emailid'],
     ['Phone',     'pPhone','→ Phone + CountryCode'],
@@ -552,6 +560,12 @@ function tryDetect(){
 // ──────────────────────────────────────────
 document.getElementById('btnRun').addEventListener('click',()=>{
   document.getElementById('msgs').innerHTML=''; groups={};
+  var wsdt = document.getElementById('wsdtInput').value.trim();
+  var cal  = document.getElementById('calendarInput').value.trim();
+  var flink= document.getElementById('flinkInput').value.trim();
+  if(!wsdt)    addMsg('ay','⚠ wsdt is empty — Batch_name will be used as fallback.');
+  if(!cal)     addMsg('ay','⚠ calendar link is empty — calendar column will be blank in CSVs.');
+  if(!flink)   addMsg('ay','⚠ flink is empty — flink column will be blank in CSVs.');
   const ov=document.getElementById('ov'); ov.classList.add('on');
   document.getElementById('sp2').textContent=`Parsing ${batchRows.length} batch rows…`;
   setTimeout(run,40);
@@ -563,7 +577,7 @@ function run(){
     const batches=parseBatches(batchRows,cols);
     if(!batches.length){
       ov.classList.remove('on');
-      addMsg('r','No valid batch rows found. Check columns in Batch_Change.csv.');
+      addMsg('ar','No valid batch rows found. Check columns in Batch_Change.csv.');
       return;
     }
     document.getElementById('sp2').textContent=`Matching ${payRows.length} payments…`;
@@ -614,12 +628,23 @@ function run(){
 // ──────────────────────────────────────────
 function renderResults(matched,unmatched){
   const total=matched+unmatched, nG=Object.keys(groups).length;
+  // Calculate total unique across all groups (what goes into CSVs)
+  var totalUnique=0;
+  for(var gk in groups){
+    var gseen=new Set();
+    groups[gk].payments.forEach(function(p){
+      var ph=cleanPhone(p.phone);
+      var k=(p.email||'').trim().toLowerCase()+'||'+ph.phone.trim();
+      gseen.add(k);
+    });
+    totalUnique+=gseen.size;
+  }
   document.getElementById('stats').innerHTML=`
-    <div class="stat"><div class="stat-n">${total.toLocaleString()}</div><div class="stat-l">Total</div></div>
-    <div class="stat"><div class="stat-n g">${matched.toLocaleString()}</div><div class="stat-l">Matched</div></div>
+    <div class="stat"><div class="stat-n">${total.toLocaleString()}</div><div class="stat-l">ai-tools- payments</div></div>
+    <div class="stat"><div class="stat-n g">${matched.toLocaleString()}</div><div class="stat-l">Matched to batch</div></div>
     <div class="stat"><div class="stat-n r">${unmatched.toLocaleString()}</div><div class="stat-l">Unmatched</div></div>
-    <div class="stat"><div class="stat-n">${nG}</div><div class="stat-l">Groups</div></div>`;
-  document.getElementById('grpLbl').textContent=`${nG} group${nG!==1?'s':''} generated`;
+    <div class="stat"><div class="stat-n">${totalUnique.toLocaleString()}</div><div class="stat-l">Unique (in CSV)</div></div>`;
+  document.getElementById('grpLbl').textContent=`${nG} batch group${nG!==1?'s':''} · download individually or as ZIP`;
 
   const tbody=document.getElementById('tbody'); tbody.innerHTML='';
   let i=0;
