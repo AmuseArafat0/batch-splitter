@@ -330,6 +330,7 @@ function detectCols(bf,pf){
     pEmail: f(pf,[/email/i,/mail/i]),
     pPhone: f(pf,[/phone/i,/mobile/i,/number/i]),
     pAmt  : f(pf,[/amount/i,/price/i,/\bamt\b/i]),
+    pSlug : f(pf,[/slug/i,/product/i,/sku/i]),
   };
 }
 
@@ -367,13 +368,65 @@ function findBatch(dt,batches){
 // ──────────────────────────────────────────
 // PHONE CLEANER
 // ──────────────────────────────────────────
+// Country code lookup table (3-digit first, then 2-digit, then 1-digit)
+var CC_TABLE=[
+  ['355','AL'],['213','DZ'],['244','AO'],['374','AM'],['297','AW'],['994','AZ'],
+  ['973','BH'],['880','BD'],['375','BY'],['501','BZ'],['229','BJ'],['975','BT'],
+  ['591','BO'],['387','BA'],['267','BW'],['673','BN'],['359','BG'],['226','BF'],
+  ['257','BI'],['855','KH'],['237','CM'],['238','CV'],['236','CF'],['235','TD'],
+  ['682','CK'],['506','CR'],['385','HR'],['357','CY'],['420','CZ'],['253','DJ'],
+  ['593','EC'],['503','SV'],['240','GQ'],['291','ER'],['251','ET'],['679','FJ'],
+  ['358','FI'],['241','GA'],['220','GM'],['995','GE'],['233','GH'],['502','GT'],
+  ['224','GN'],['245','GW'],['592','GY'],['509','HT'],['504','HN'],['852','HK'],
+  ['354','IS'],['964','IQ'],['353','IE'],['972','IL'],['225','CI'],['876','JM'],
+  ['962','JO'],['254','KE'],['686','KI'],['850','KP'],['965','KW'],['996','KG'],
+  ['856','LA'],['961','LB'],['266','LS'],['231','LR'],['218','LY'],['423','LI'],
+  ['370','LT'],['352','LU'],['853','MO'],['389','MK'],['261','MG'],['265','MW'],
+  ['960','MV'],['223','ML'],['356','MT'],['692','MH'],['222','MR'],['230','MU'],
+  ['691','FM'],['373','MD'],['976','MN'],['382','ME'],['212','MA'],['258','MZ'],
+  ['264','NA'],['674','NR'],['977','NP'],['505','NI'],['227','NE'],['234','NG'],
+  ['683','NU'],['968','OM'],['680','PW'],['970','PS'],['507','PA'],['675','PG'],
+  ['595','PY'],['974','QA'],['250','RW'],['966','SA'],['221','SN'],['381','RS'],
+  ['248','SC'],['232','SL'],['677','SB'],['252','SO'],['211','SS'],['249','SD'],
+  ['597','SR'],['268','SZ'],['963','SY'],['886','TW'],['992','TJ'],['255','TZ'],
+  ['228','TG'],['676','TO'],['868','TT'],['216','TN'],['993','TM'],['256','UG'],
+  ['380','UA'],['971','AE'],['598','UY'],['998','UZ'],['678','VU'],['967','YE'],
+  ['260','ZM'],['263','ZW'],
+  ['91','IN'],['44','GB'],['49','DE'],['33','FR'],['39','IT'],['34','ES'],
+  ['81','JP'],['82','KR'],['86','CN'],['61','AU'],['64','NZ'],['55','BR'],
+  ['52','MX'],['27','ZA'],['47','NO'],['46','SE'],['45','DK'],['41','CH'],
+  ['43','AT'],['32','BE'],['31','NL'],['30','GR'],['48','PL'],['36','HU'],
+  ['90','TR'],['60','MY'],['65','SG'],['66','TH'],['63','PH'],['62','ID'],
+  ['84','VN'],['92','PK'],['94','LK'],['95','MM'],['98','IR'],['20','EG'],
+  ['1','US'],['7','RU']
+];
+
 function cleanPhone(raw){
-  let s=String(raw||'').replace(/['\s\-\(\)+"]/g,'');
-  if(s.startsWith('+'))s=s.slice(1);
+  var s=String(raw||'').replace(/['"\s\-\(\)]/g,'');
+  var hadPlus=s.startsWith('+');
+  if(hadPlus) s=s.slice(1);
+  // Remove any remaining non-digits
+  s=s.replace(/\D/g,'');
+  if(!s) return{cc:'91',phone:''};
+
+  // Bare number without + prefix: if 10 digits assume India, if 11 with leading 0 strip it
+  if(!hadPlus){
+    if(s.startsWith('0')&&s.length===11) return{cc:'91',phone:s.slice(1)};
+    if(s.length===10) return{cc:'91',phone:s};
+  }
+
+  // Has + prefix: try CC table (3-digit first, then 2-digit, then 1-digit)
+  var sorted=CC_TABLE.slice().sort(function(a,b){return b[0].length-a[0].length;});
+  for(var i=0;i<sorted.length;i++){
+    var cc=sorted[i][0];
+    if(s.startsWith(cc)){
+      var phone=s.slice(cc.length);
+      if(phone.length>=6&&phone.length<=12) return{cc:cc,phone:phone};
+    }
+  }
+  // Fallback: if 12 digits starting with 91 = India
   if(s.startsWith('91')&&s.length===12) return{cc:'91',phone:s.slice(2)};
-  if(s.startsWith('0') &&s.length===11) return{cc:'91',phone:s.slice(1)};
-  if(s.length===10) return{cc:'91',phone:s};
-  if(s.length>10) return{cc:s.slice(0,s.length-10),phone:s.slice(-10)};
+  // Last resort
   return{cc:'91',phone:s};
 }
 
@@ -475,6 +528,7 @@ function tryDetect(){
     ['Email',     'pEmail','→ emailid'],
     ['Phone',     'pPhone','→ Phone + CountryCode'],
     ['Amount',    'pAmt',  '→ Amount'],
+    ['Payment Slug','pSlug','→ filter: ai-tools- only'],
   ];
   for(const[k,key,arrow] of items){
     const val=cols[key];
@@ -513,9 +567,20 @@ function run(){
       return;
     }
     document.getElementById('sp2').textContent=`Matching ${payRows.length} payments…`;
+    // Filter: only process rows where Payment Slug starts with "ai-tools-"
+    const slugCol = cols.pSlug;
+    const filteredRows = slugCol
+      ? payRows.filter(r => {
+          const slug = String(r[slugCol]||'').trim().toLowerCase();
+          return slug.startsWith('ai-tools-');
+        })
+      : payRows;
+    const excludedCount = payRows.length - filteredRows.length;
+    if(excludedCount>0) addMsg('ay',`ℹ ${excludedCount} payments excluded (non ai-tools- slugs like excel, python, aitvapp etc.)`);
+
     let matched=0,unmatched=0,parseErr=0;
 
-    for(const row of payRows){
+    for(const row of filteredRows){
       const dt=parseDt(row[cols.pDate]||'');
       if(!dt) parseErr++;
       const batch=dt?findBatch(dt,batches):null;
