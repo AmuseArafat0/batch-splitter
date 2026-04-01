@@ -455,6 +455,8 @@ function buildRows(payments,batch){
   var wsdt     = (document.getElementById('wsdtInput')     ? document.getElementById('wsdtInput').value.trim()     : '') || batch.name;
   var calendar = (document.getElementById('calendarInput') ? document.getElementById('calendarInput').value.trim() : '');
   var flink    = (document.getElementById('flinkInput')    ? document.getElementById('flinkInput').value.trim()    : '');
+  // Sort oldest → newest before dedup (so first-seen = earliest payment)
+  payments = payments.slice().sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
   // Deduplicate: keep first occurrence per email+phone combination
   var seen = new Set();
   var unique = payments.filter(function(p){
@@ -607,6 +609,7 @@ function run(){
         email:row[cols.pEmail]||'',
         phone:row[cols.pPhone]||'',
         amount:row[cols.pAmt]||'',
+        dt: dt ? dt.getTime() : 0,   // timestamp ms for sorting
       });
       if(batch)matched++;else unmatched++;
     }
