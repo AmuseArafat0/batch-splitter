@@ -203,32 +203,69 @@ tbody td{padding:10px 14px;vertical-align:middle;}
     <div class="dbox-grid" id="dgrid"></div>
   </div>
 
-  <!-- 02 FLINK + PROCESS -->
+  <!-- 02 PRODUCT CONFIG + PROCESS -->
   <div class="step">
     <span class="step-n">02</span>
-    <span class="step-l">Set Follow-up Link &amp; Split</span>
+    <span class="step-l">Configure Both Products</span>
     <span class="step-line"></span>
   </div>
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">wsdt <span style="color:var(--tm);font-weight:400;">(workshop date/time)</span></label>
-      <input id="wsdtInput" type="text" placeholder="e.g. 5th April | 11 AM"
-        style="background:var(--s1);border:1px solid var(--border2);color:var(--t);padding:11px 14px;font-family:var(--mono);font-size:12px;outline:none;"
-        onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;">
+
+    <!-- AI Tools Workshop -->
+    <div style="background:var(--s1);border:1px solid var(--border);padding:18px;">
+      <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--y);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+        AI Tools Workshop <span style="color:var(--tm);font-weight:400;">(ai-tools-*)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">wsdt</label>
+          <input id="ai_wsdt" type="text" placeholder="e.g. 5th April | 11 AM"
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--t);padding:9px 12px;font-family:var(--mono);font-size:11px;outline:none;"
+            onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">calendar link</label>
+          <input id="ai_calendar" type="text" placeholder="https://link.be10x.in/Calendar-..."
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--t);padding:9px 12px;font-family:var(--mono);font-size:11px;outline:none;"
+            onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">flink</label>
+          <input id="ai_flink" type="text" placeholder="https://forms.gle/..."
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--t);padding:9px 12px;font-family:var(--mono);font-size:11px;outline:none;"
+            onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+      </div>
     </div>
-    <div style="display:flex;flex-direction:column;gap:6px;">
-      <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">calendar link</label>
-      <input id="calendarInput" type="text" placeholder="https://link.be10x.in/Calendar-..."
-        style="background:var(--s1);border:1px solid var(--border2);color:var(--t);padding:11px 14px;font-family:var(--mono);font-size:12px;outline:none;"
-        onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+
+    <!-- AITV App -->
+    <div style="background:var(--s1);border:1px solid var(--border);padding:18px;">
+      <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--b);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);">
+        AI TV App <span style="color:var(--tm);font-weight:400;">(aitvapp / aitvpro)</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">wsdt</label>
+          <input id="tv_wsdt" type="text" placeholder="e.g. 5th April | 11 AM"
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--t);padding:9px 12px;font-family:var(--mono);font-size:11px;outline:none;"
+            onfocus="this.style.borderColor='var(--b)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">calendar link</label>
+          <input id="tv_calendar" type="text" placeholder="https://link.be10x.in/Calendar-..."
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--t);padding:9px 12px;font-family:var(--mono);font-size:11px;outline:none;"
+            onfocus="this.style.borderColor='var(--b)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">flink</label>
+          <input id="tv_flink" type="text" placeholder="https://forms.gle/..."
+            style="background:var(--bg);border:1px solid var(--border2);color:var(--t);padding:9px 12px;font-family:var(--mono);font-size:11px;outline:none;"
+            onfocus="this.style.borderColor='var(--b)'" onblur="this.style.borderColor='var(--border2)'">
+        </div>
+      </div>
     </div>
-  </div>
-  <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:20px;">
-    <label style="font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--tm);">flink <span style="color:var(--tm);font-weight:400;">(follow-up form link)</span></label>
-    <input id="flinkInput" type="text" placeholder="https://forms.gle/..."
-      style="background:var(--s1);border:1px solid var(--border2);color:var(--t);padding:11px 14px;font-family:var(--mono);font-size:12px;outline:none;"
-      onfocus="this.style.borderColor='var(--y)'" onblur="this.style.borderColor='var(--border2)'">
+
   </div>
 
   <div id="msgs"></div>
@@ -252,21 +289,30 @@ tbody td{padding:10px 14px;vertical-align:middle;}
       <button class="btn-zip" id="btnZip">⬇ Download ALL as ZIP</button>
     </div>
 
-    <div class="twrap">
+    <!-- AI Tools table -->
+    <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--y);margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+      AI Tools Workshop
+      <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+    </div>
+    <div class="twrap" style="margin-bottom:24px;">
       <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Batch / Group Name</th>
-            <th>From (inclusive)</th>
-            <th>To (exclusive)</th>
-            <th>Payments</th>
-            <th>CSV</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
+        <thead><tr><th>#</th><th>Batch / Group Name</th><th>From</th><th>To</th><th>Payments</th><th>CSV</th></tr></thead>
+        <tbody id="tbody_ai"></tbody>
       </table>
     </div>
+
+    <!-- AITV table -->
+    <div style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--b);margin-bottom:8px;display:flex;align-items:center;gap:10px;">
+      AI TV App
+      <span style="flex:1;height:1px;background:var(--border);display:block;"></span>
+    </div>
+    <div class="twrap">
+      <table>
+        <thead><tr><th>#</th><th>Batch / Group Name</th><th>From</th><th>To</th><th>Payments</th><th>CSV</th></tr></thead>
+        <tbody id="tbody_tv"></tbody>
+      </table>
+    </div>
+
   </div>
 
 </main>
@@ -279,7 +325,7 @@ tbody td{padding:10px 14px;vertical-align:middle;}
 // ──────────────────────────────────────────
 // STATE
 // ──────────────────────────────────────────
-let batchRows=null, payRows=null, cols={}, groups={};
+let batchRows=null, payRows=null, cols={}, groups={}, groupsTV={};
 
 // ──────────────────────────────────────────
 // DATE PARSER  – handles all messy formats
@@ -451,10 +497,11 @@ function cleanPhone(raw){
 const COLS=['Name','CountryCode','Phone','AllowBroadcast','AllowSMS',
             'emailid','Amount','wsdt','brname','calendar','flink'];
 
-function buildRows(payments,batch){
-  var wsdt     = (document.getElementById('wsdtInput')     ? document.getElementById('wsdtInput').value.trim()     : '') || batch.name;
-  var calendar = (document.getElementById('calendarInput') ? document.getElementById('calendarInput').value.trim() : '');
-  var flink    = (document.getElementById('flinkInput')    ? document.getElementById('flinkInput').value.trim()    : '');
+function buildRows(payments,batch,prefix){
+  var p = (prefix==='TV') ? 'tv' : 'ai';
+  var wsdt     = (document.getElementById(p+'_wsdt')     ? document.getElementById(p+'_wsdt').value.trim()     : '') || batch.name;
+  var calendar = (document.getElementById(p+'_calendar') ? document.getElementById(p+'_calendar').value.trim() : '');
+  var flink    = (document.getElementById(p+'_flink')    ? document.getElementById(p+'_flink').value.trim()    : '');
   // Sort oldest → newest before dedup (so first-seen = earliest payment)
   payments = payments.slice().sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
   // Deduplicate: keep first occurrence per email+phone combination
@@ -561,13 +608,11 @@ function tryDetect(){
 // PROCESS
 // ──────────────────────────────────────────
 document.getElementById('btnRun').addEventListener('click',()=>{
-  document.getElementById('msgs').innerHTML=''; groups={};
-  var wsdt = document.getElementById('wsdtInput').value.trim();
-  var cal  = document.getElementById('calendarInput').value.trim();
-  var flink= document.getElementById('flinkInput').value.trim();
-  if(!wsdt)    addMsg('ay','⚠ wsdt is empty — Batch_name will be used as fallback.');
-  if(!cal)     addMsg('ay','⚠ calendar link is empty — calendar column will be blank in CSVs.');
-  if(!flink)   addMsg('ay','⚠ flink is empty — flink column will be blank in CSVs.');
+  document.getElementById('msgs').innerHTML=''; groups={}; groupsTV={};
+  var ai_wsdt = document.getElementById('ai_wsdt').value.trim();
+  var tv_wsdt = document.getElementById('tv_wsdt').value.trim();
+  if(!ai_wsdt) addMsg('ay','⚠ AI Tools wsdt empty — Batch_name used as fallback.');
+  if(!tv_wsdt) addMsg('ay','⚠ AITV wsdt empty — Batch_name used as fallback.');
   const ov=document.getElementById('ov'); ov.classList.add('on');
   document.getElementById('sp2').textContent=`Parsing ${batchRows.length} batch rows…`;
   setTimeout(run,40);
@@ -583,41 +628,44 @@ function run(){
       return;
     }
     document.getElementById('sp2').textContent=`Matching ${payRows.length} payments…`;
-    // Filter: only process rows where Payment Slug starts with "ai-tools-"
     const slugCol = cols.pSlug;
-    const filteredRows = slugCol
-      ? payRows.filter(r => {
-          const slug = String(r[slugCol]||'').trim().toLowerCase();
-          return slug.startsWith('ai-tools-');
-        })
-      : payRows;
-    const excludedCount = payRows.length - filteredRows.length;
-    if(excludedCount>0) addMsg('ay',`ℹ ${excludedCount} payments excluded (non ai-tools- slugs like excel, python, aitvapp etc.)`);
 
-    let matched=0,unmatched=0,parseErr=0;
+    // Split into AI Tools (ai-tools-*) and AITV (aitvapp / aitvpro)
+    const aiRows = slugCol ? payRows.filter(r=>{const s=String(r[slugCol]||'').trim().toLowerCase();return s.startsWith('ai-tools-');}) : payRows;
+    const tvRows = slugCol ? payRows.filter(r=>{const s=String(r[slugCol]||'').trim().toLowerCase();return s==='aitvapp'||s==='aitvpro';}) : [];
+    const excludedCount = payRows.length - aiRows.length - tvRows.length;
+    if(excludedCount>0) addMsg('ay',`ℹ ${excludedCount} payments excluded (other slugs: excel, python, etc.)`);
 
-    for(const row of filteredRows){
-      const dt=parseDt(row[cols.pDate]||'');
-      if(!dt) parseErr++;
-      const batch=dt?findBatch(dt,batches):null;
-      const key=batch?batch.name:'__UNMATCHED__';
-      if(!groups[key]) groups[key]={
-        batch:batch||{name:'Unmatched',fromDt:null,toDt:null,wa:''},
-        payments:[]
-      };
-      groups[key].payments.push({
-        email:row[cols.pEmail]||'',
-        phone:row[cols.pPhone]||'',
-        amount:row[cols.pAmt]||'',
-        dt: dt ? dt.getTime() : 0,   // timestamp ms for sorting
-      });
-      if(batch)matched++;else unmatched++;
+    function processRows(rows, groupMap){
+      let matched=0, unmatched=0, parseErr=0;
+      for(const row of rows){
+        const dt=parseDt(row[cols.pDate]||'');
+        if(!dt) parseErr++;
+        const batch=dt?findBatch(dt,batches):null;
+        const key=batch?batch.name:'__UNMATCHED__';
+        if(!groupMap[key]) groupMap[key]={batch:batch||{name:'Unmatched',fromDt:null,toDt:null,wa:''},payments:[]};
+        groupMap[key].payments.push({
+          email:row[cols.pEmail]||'',
+          phone:row[cols.pPhone]||'',
+          amount:row[cols.pAmt]||'',
+          dt: dt ? dt.getTime() : 0,
+        });
+        if(batch)matched++;else unmatched++;
+      }
+      return {matched,unmatched,parseErr};
     }
 
-    if(parseErr) addMsg('ay',`⚠ ${parseErr} payments had unreadable dates → placed in Unmatched group.`);
+    const aiRes = processRows(aiRows, groups);
+    const tvRes = processRows(tvRows, groupsTV);
+
+    const matched   = aiRes.matched + tvRes.matched;
+    const unmatched = aiRes.unmatched + tvRes.unmatched;
+    const parseErr  = aiRes.parseErr + tvRes.parseErr;
+
+    if(parseErr)  addMsg('ay',`⚠ ${parseErr} payments had unreadable dates → Unmatched group.`);
     if(unmatched>parseErr) addMsg('ay',`⚠ ${unmatched-parseErr} payments fell outside all batch ranges → Unmatched group.`);
 
-    renderResults(matched,unmatched);
+    renderResults(matched, unmatched, aiRows.length, tvRows.length);
     ov.classList.remove('on');
   }catch(e){
     ov.classList.remove('on');
@@ -629,33 +677,26 @@ function run(){
 // ──────────────────────────────────────────
 // RENDER
 // ──────────────────────────────────────────
-function renderResults(matched,unmatched){
-  const total=matched+unmatched, nG=Object.keys(groups).length;
-  // Calculate total unique across all groups (what goes into CSVs)
-  var totalUnique=0;
-  for(var gk in groups){
-    var gseen=new Set();
-    groups[gk].payments.forEach(function(p){
+function countUnique(groupMap){
+  var total=0;
+  for(var gk in groupMap){
+    var s=new Set();
+    groupMap[gk].payments.forEach(function(p){
       var ph=cleanPhone(p.phone);
-      var k=(p.email||'').trim().toLowerCase()+'||'+ph.phone.trim();
-      gseen.add(k);
+      s.add((p.email||'').trim().toLowerCase()+'||'+ph.phone.trim());
     });
-    totalUnique+=gseen.size;
+    total+=s.size;
   }
-  document.getElementById('stats').innerHTML=`
-    <div class="stat"><div class="stat-n">${total.toLocaleString()}</div><div class="stat-l">ai-tools- payments</div></div>
-    <div class="stat"><div class="stat-n g">${matched.toLocaleString()}</div><div class="stat-l">Matched to batch</div></div>
-    <div class="stat"><div class="stat-n r">${unmatched.toLocaleString()}</div><div class="stat-l">Unmatched</div></div>
-    <div class="stat"><div class="stat-n">${totalUnique.toLocaleString()}</div><div class="stat-l">Unique (in CSV)</div></div>`;
-  document.getElementById('grpLbl').textContent=`${nG} batch group${nG!==1?'s':''} · download individually or as ZIP`;
+  return total;
+}
 
-  const tbody=document.getElementById('tbody'); tbody.innerHTML='';
+function fillTable(tbodyId, groupMap, prefix){
+  const tbody=document.getElementById(tbodyId); tbody.innerHTML='';
   let i=0;
-  for(const[key,g] of Object.entries(groups)){
+  for(const[key,g] of Object.entries(groupMap)){
     i++;
     const um=key==='__UNMATCHED__';
     const tr=document.createElement('tr');
-    // Count unique for display
     var seen=new Set();
     var uCount=g.payments.filter(function(p){
       var ph=cleanPhone(p.phone);
@@ -671,23 +712,46 @@ function renderResults(matched,unmatched){
       <td class="sm">${fmtDt(g.batch.fromDt)}</td>
       <td class="sm">${fmtDt(g.batch.toDt)}</td>
       <td><span class="badge ${um?'br':'bg'}">${countHtml}</span></td>
-      <td><button class="btn-dl" data-k="${xss(key)}">⬇ CSV</button></td>`;
+      <td><button class="btn-dl" data-k="${xss(key)}" data-prefix="${prefix}">⬇ CSV</button></td>`;
     tbody.appendChild(tr);
   }
-  tbody.querySelectorAll('.btn-dl').forEach(b=>b.addEventListener('click',()=>dlGroup(b.dataset.k)));
+  tbody.querySelectorAll('.btn-dl').forEach(b=>b.addEventListener('click',()=>dlGroup(b.dataset.k, b.dataset.prefix)));
+}
+
+function renderResults(matched, unmatched, aiCount, tvCount){
+  const total=matched+unmatched;
+  const nAI=Object.keys(groups).length, nTV=Object.keys(groupsTV).length;
+  const uAI=countUnique(groups), uTV=countUnique(groupsTV);
+
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-n">${(aiCount||0).toLocaleString()}</div><div class="stat-l">AI Tools payments</div></div>
+    <div class="stat"><div class="stat-n" style="color:var(--b)">${(tvCount||0).toLocaleString()}</div><div class="stat-l">AITV payments</div></div>
+    <div class="stat"><div class="stat-n g">${(uAI+uTV).toLocaleString()}</div><div class="stat-l">Unique in CSVs</div></div>
+    <div class="stat"><div class="stat-n r">${unmatched.toLocaleString()}</div><div class="stat-l">Unmatched</div></div>`;
+
+  const nG=nAI+nTV;
+  document.getElementById('grpLbl').textContent=`${nAI} AI Tools group${nAI!==1?'s':''} + ${nTV} AITV group${nTV!==1?'s':''} · download individually or as ZIP`;
+
+  fillTable('tbody_ai', groups,   'AI');
+  fillTable('tbody_tv', groupsTV, 'TV');
+
   document.getElementById('res').classList.add('on');
   document.getElementById('res').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function dlGroup(key){
-  const g=groups[key]; if(!g) return;
-  dl(toCSV(buildRows(g.payments,g.batch)),`${slug(g.batch.name)}_Main_Data.csv`);
+function dlGroup(key, prefix){
+  var gmap = (prefix==='TV') ? groupsTV : groups;
+  const g=gmap[key]; if(!g) return;
+  var label = (prefix==='TV') ? 'AITV' : 'AI_Tools';
+  dl(toCSV(buildRows(g.payments,g.batch,prefix)),`${slug(g.batch.name)}_${label}_Main_Data.csv`);
 }
 
 document.getElementById('btnZip').addEventListener('click',async()=>{
   const zip=new JSZip();
   for(const[key,g] of Object.entries(groups))
-    zip.file(`${slug(g.batch.name)}_Main_Data.csv`,toCSV(buildRows(g.payments,g.batch)));
+    zip.file(`AI_Tools/${slug(g.batch.name)}_AI_Tools_Main_Data.csv`,toCSV(buildRows(g.payments,g.batch,'AI')));
+  for(const[key,g] of Object.entries(groupsTV))
+    zip.file(`AITV/${slug(g.batch.name)}_AITV_Main_Data.csv`,toCSV(buildRows(g.payments,g.batch,'TV')));
   const blob=await zip.generateAsync({type:'blob'});
   const a=Object.assign(document.createElement('a'),{
     href:URL.createObjectURL(blob),
