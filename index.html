@@ -336,8 +336,12 @@ function parseDt(s){
   if(!s||/^(NaN|nan|null|undefined)$/.test(s)) return null;
 
   // ISO: "2026-03-29 00:02:14"
-  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
-  if(m) return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+m[6]);
+  let m=s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):?(\d{2})?/);
+  if(m) return new Date(+m[1],+m[2]-1,+m[3],+m[4],+m[5],+(m[6]||0));
+
+  // DD-MM-YYYY HH:MM or HH:MM:SS (new Juspay export format with dashes)
+  let md=s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{2}):?(\d{2})?/);
+  if(md) return new Date(+md[3],+md[2]-1,+md[1],+md[4],+md[5],+(md[6]||0));
 
   // Normalize messy batch formats
   s=s
@@ -504,15 +508,18 @@ function buildRows(payments,batch,prefix){
   var flink    = (document.getElementById(p+'_flink')    ? document.getElementById(p+'_flink').value.trim()    : '');
   // Sort oldest → newest before dedup (so first-seen = earliest payment)
   payments = payments.slice().sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
-  // Deduplicate: keep first occurrence per email+phone combination
-  var seen = new Set();
+  // Deduplicate: remove if email OR phone already seen (independently)
+  var seenEmails = new Set();
+  var seenPhones = new Set();
   var unique = payments.filter(function(p){
-    var ph = cleanPhone(p.phone);
+    var ph    = cleanPhone(p.phone);
     var email = (p.email||'').trim().toLowerCase();
     var phone = ph.phone.trim();
-    var key = email + '||' + phone;
-    if(seen.has(key)) return false;
-    seen.add(key);
+    var dupEmail = email && seenEmails.has(email);
+    var dupPhone = phone && seenPhones.has(phone);
+    if(dupEmail || dupPhone) return false;
+    if(email) seenEmails.add(email);
+    if(phone) seenPhones.add(phone);
     return true;
   });
   return unique.map(function(p){
@@ -680,12 +687,20 @@ function run(){
 function countUnique(groupMap){
   var total=0;
   for(var gk in groupMap){
-    var s=new Set();
-    groupMap[gk].payments.forEach(function(p){
+    var sorted=groupMap[gk].payments.slice().sort(function(a,b){return (a.dt||0)-(b.dt||0);});
+    var se=new Set(), sp=new Set(), count=0;
+    sorted.forEach(function(p){
       var ph=cleanPhone(p.phone);
-      s.add((p.email||'').trim().toLowerCase()+'||'+ph.phone.trim());
+      var email=(p.email||'').trim().toLowerCase();
+      var phone=ph.phone.trim();
+      var dup=(email&&se.has(email))||(phone&&sp.has(phone));
+      if(!dup){
+        if(email) se.add(email);
+        if(phone) sp.add(phone);
+        count++;
+      }
     });
-    total+=s.size;
+    total+=count;
   }
   return total;
 }
@@ -697,11 +712,16 @@ function fillTable(tbodyId, groupMap, prefix){
     i++;
     const um=key==='__UNMATCHED__';
     const tr=document.createElement('tr');
-    var seen=new Set();
+    var dEmails=new Set(), dPhones=new Set();
     var uCount=g.payments.filter(function(p){
       var ph=cleanPhone(p.phone);
-      var k=(p.email||'').trim().toLowerCase()+'||'+ph.phone.trim();
-      if(seen.has(k))return false;seen.add(k);return true;
+      var email=(p.email||'').trim().toLowerCase();
+      var phone=ph.phone.trim();
+      var dup=(email&&dEmails.has(email))||(phone&&dPhones.has(phone));
+      if(dup) return false;
+      if(email) dEmails.add(email);
+      if(phone) dPhones.add(phone);
+      return true;
     }).length;
     var dupCount=g.payments.length-uCount;
     var countHtml=uCount.toLocaleString();
