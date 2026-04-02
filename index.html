@@ -480,7 +480,11 @@ function cleanPhone(raw){
     return{cc:'91',phone:s};                                                // anything else bare → India
   }
 
-  // Has + prefix ONLY: try CC table (3-digit first, then 2-digit, then 1-digit)
+  // KEY FIX: if + present but only 10 digits → bare Indian number stored without 91 prefix
+  // e.g. '+9511915521' (Juspay sometimes omits country code) → CC=91, phone=9511915521
+  if(s.length===10) return{cc:'91',phone:s};
+
+  // Has + prefix: try CC table (3-digit first, then 2-digit, then 1-digit)
   var sorted=CC_TABLE.slice().sort(function(a,b){return b[0].length-a[0].length;});
   for(var i=0;i<sorted.length;i++){
     var cc=sorted[i][0];
@@ -503,9 +507,9 @@ const COLS=['Name','CountryCode','Phone','AllowBroadcast','AllowSMS',
 
 function buildRows(payments,batch,prefix){
   var p = (prefix==='TV') ? 'tv' : 'ai';
-  var wsdt     = (document.getElementById(p+'_wsdt')     ? document.getElementById(p+'_wsdt').value.trim()     : '') || batch.name;
-  var calendar = (document.getElementById(p+'_calendar') ? document.getElementById(p+'_calendar').value.trim() : '');
-  var flink    = (document.getElementById(p+'_flink')    ? document.getElementById(p+'_flink').value.trim()    : '');
+  var wsdt     = document.getElementById(p+'_wsdt')     ? document.getElementById(p+'_wsdt').value.trim()     : '';
+  var calendar = document.getElementById(p+'_calendar') ? document.getElementById(p+'_calendar').value.trim() : '';
+  var flink    = document.getElementById(p+'_flink')    ? document.getElementById(p+'_flink').value.trim()    : '';
   // Sort oldest → newest before dedup (so first-seen = earliest payment)
   payments = payments.slice().sort(function(a,b){ return (a.dt||0)-(b.dt||0); });
   // Deduplicate: remove if email OR phone already seen (independently)
@@ -616,10 +620,10 @@ function tryDetect(){
 // ──────────────────────────────────────────
 document.getElementById('btnRun').addEventListener('click',()=>{
   document.getElementById('msgs').innerHTML=''; groups={}; groupsTV={};
-  var ai_wsdt = document.getElementById('ai_wsdt').value.trim();
-  var tv_wsdt = document.getElementById('tv_wsdt').value.trim();
-  if(!ai_wsdt) addMsg('ay','⚠ AI Tools wsdt empty — Batch_name used as fallback.');
-  if(!tv_wsdt) addMsg('ay','⚠ AITV wsdt empty — Batch_name used as fallback.');
+  if(!document.getElementById('ai_wsdt').value.trim())     addMsg('ay','⚠ AI Tools wsdt is empty.');
+  if(!document.getElementById('ai_calendar').value.trim())  addMsg('ay','⚠ AI Tools calendar link is empty.');
+  if(!document.getElementById('tv_wsdt').value.trim())      addMsg('ay','⚠ AITV wsdt is empty.');
+  if(!document.getElementById('tv_calendar').value.trim())  addMsg('ay','⚠ AITV calendar link is empty.');
   const ov=document.getElementById('ov'); ov.classList.add('on');
   document.getElementById('sp2').textContent=`Parsing ${batchRows.length} batch rows…`;
   setTimeout(run,40);
