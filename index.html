@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Batch Splitter — Horimiya Edition</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Cdefs%3E%3CradialGradient id='bg' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='0%25' stop-color='%23eef2ff'/%3E%3Cstop offset='100%25' stop-color='%23dce4ff'/%3E%3C/radialGradient%3E%3ClinearGradient id='hg' x1='0' y1='44' x2='44' y2='0' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%23a82040'/%3E%3Cstop offset='55%25' stop-color='%23d93b5c'/%3E%3Cstop offset='100%25' stop-color='%23f05070'/%3E%3C/linearGradient%3E%3ClinearGradient id='mg' x1='44' y1='0' x2='0' y2='44' gradientUnits='userSpaceOnUse'%3E%3Cstop offset='0%25' stop-color='%235b70d0'/%3E%3Cstop offset='100%25' stop-color='%232a3580'/%3E%3C/linearGradient%3E%3Cfilter id='glow' x='-40%25' y='-40%25' width='180%25' height='180%25'%3E%3CfeGaussianBlur stdDeviation='1' result='blur'/%3E%3CfeMerge%3E%3CfeMergeNode in='blur'/%3E%3CfeMergeNode in='SourceGraphic'/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='22' cy='22' r='21' fill='url(%23bg)' stroke='%23c8d3f5' stroke-width='1.5'/%3E%3Ccircle cx='9' cy='9' r='1.1' fill='%23f4a7c0' opacity='.8'/%3E%3Ccircle cx='35' cy='8' r='.9' fill='%23d93b5c' opacity='.6'/%3E%3Ccircle cx='38' cy='22' r='.7' fill='%23f4a7c0' opacity='.5'/%3E%3Ccircle cx='6' cy='28' r='1' fill='%235b70d0' opacity='.5'/%3E%3Ccircle cx='33' cy='36' r='.9' fill='%23f4a7c0' opacity='.6'/%3E%3Cpath d='M8 34 C13 20 22 14 36 12' stroke='url(%23hg)' stroke-width='2.2' stroke-linecap='round' fill='none' filter='url(%23glow)' opacity='.9'/%3E%3Cpath d='M12 30 C18 26 26 20 35 12' stroke='url(%23mg)' stroke-width='1.2' stroke-dasharray='2 3' stroke-linecap='round' fill='none' opacity='.6'/%3E%3Ccircle cx='36' cy='12' r='3.5' fill='url(%23hg)' filter='url(%23glow)' opacity='.9'/%3E%3Ccircle cx='36' cy='12' r='1.8' fill='%23fff' opacity='.8'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Klee+One:wght@400;600&family=M+PLUS+Rounded+1c:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -895,16 +896,16 @@ function buildRows(payments,batch,prefix){
   var flink=document.getElementById(p+'_flink')?document.getElementById(p+'_flink').value.trim():'';
   payments=payments.slice().sort(function(a,b){return(a.dt||0)-(b.dt||0);});
   var seenEmails=new Set(),seenPhones=new Set();
-  var unique=payments.filter(function(p){
-    var ph=cleanPhone(p.phone),email=(p.email||'').trim().toLowerCase(),phone=ph.phone.trim();
+  var unique=payments.filter(function(row){
+    var ph=cleanPhone(row.phone),email=(row.email||'').trim().toLowerCase(),phone=ph.phone.trim();
     var dupEmail=email&&seenEmails.has(email),dupPhone=phone&&seenPhones.has(phone);
     if(dupEmail||dupPhone)return false;
     if(email)seenEmails.add(email);if(phone)seenPhones.add(phone);return true;
   });
-  return unique.map(function(p){
-    var ph=cleanPhone(p.phone);
+  return unique.map(function(row){
+    var ph=cleanPhone(row.phone);
     return{Name:'',CountryCode:ph.cc,Phone:ph.phone,AllowBroadcast:'True',AllowSMS:'True',
-      emailid:p.email||'',Amount:p.amount||'',wsdt:wsdt,brname:'',calendar:calendar,flink:flink};
+      emailid:row.email||'',Amount:row.amount||'',wsdt:wsdt,brname:'',calendar:calendar,flink:flink};
   });
 }
 function toCSV(rows){
@@ -999,7 +1000,7 @@ function run(){
     const aiRes=processRows(aiRows,groups),tvRes=processRows(tvRows,groupsTV);
     const matched=aiRes.matched+tvRes.matched,unmatched=aiRes.unmatched+tvRes.unmatched,parseErr=aiRes.parseErr+tvRes.parseErr;
     if(parseErr)addMsg('ay',`⚠ ${parseErr} payments had unreadable dates → Unmatched group.`);
-    if(unmatched>parseErr)addMsg('ay',`⚠ ${unmatched-parseErr} payments fell outside all batch ranges → Unmatched group.`);
+    if(unmatched-parseErr>0)addMsg('ay',`⚠ ${unmatched-parseErr} payments fell outside all batch ranges → Unmatched group.`);
     renderResults(matched,unmatched,aiRows.length,tvRows.length);
     ov.classList.remove('on');
   }catch(e){ov.classList.remove('on');addMsg('ar','Error: '+e.message);console.error(e);}
@@ -1059,6 +1060,7 @@ function dlGroup(key,prefix){
   dl(toCSV(buildRows(g.payments,g.batch,prefix)),`${slug(g.batch.name)}_${label}_Main_Data.csv`);
 }
 document.getElementById('btnZip').addEventListener('click',async()=>{
+  if(!Object.keys(groups).length&&!Object.keys(groupsTV).length){alert('No results yet — please run the split first.');return;}
   const zip=new JSZip();
   for(const[key,g] of Object.entries(groups))
     zip.file(`AI_Tools/${slug(g.batch.name)}_AI_Tools_Main_Data.csv`,toCSV(buildRows(g.payments,g.batch,'AI')));
